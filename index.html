@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deniz Öztürk | Interactive Resume</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutrals (Stone/Gray) with a Teal Accent -->
+    <!-- Application Structure Plan: Designed a single-page portfolio SPA. Structure: Sticky header nav, 'Home' hero section, 'Experience' section, 'Projects' section, 'Skills' visualization, and 'Education & Activities'. Key Interactions: 1) Smooth scrolling navigation via the header. 2) Interactive filtering for 'Experience' and 'Projects' sections using JS, allowing users to toggle between 'All', 'Fullstack', and 'Robotics/Systems'. Why this structure?: This non-linear, interactive approach is superior to the static PDF as it allows a user (e.g., a recruiter) to immediately explore the content most relevant to them, especially highlighting the candidate's dual expertise in Fullstack and Robotics, which is a key theme of the resume. -->
+    <!-- Visualization & Content Choices: 
+        1. Report Info: Navigation -> Goal: Easy SPA navigation -> Viz/Method: Sticky Header + JS smooth scroll -> Interaction: Click -> Justification: Standard, intuitive SPA user experience.
+        2. Report Info: Work Experience & Projects lists -> Goal: Allow user-driven exploration of relevant experience -> Viz/Method: HTML/Tailwind Cards + JS Filter Buttons -> Interaction: Click to filter (show/hide cards based on data-attributes) -> Justification: Turns static lists into an interactive exploration, directly highlighting the candidate's dual themes (Fullstack/Robotics).
+        3. Report Info: Technical Skills list -> Goal: Visually communicate proficiency and breadth of skills -> Viz/Method: Horizontal Bar Chart (Chart.js Canvas) -> Interaction: Hover for tooltips -> Justification: More engaging and digestible than a long list; Chart.js is a required tool.
+        4. Report Info: Education, Activities -> Goal: Provide supporting background information -> Viz/Method: Static HTML/Tailwind 2-column grid -> Interaction: None -> Justification: Clear, legible presentation for static data.
+    -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-padding-top: 6rem; 
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 400px;
+            max-height: 500px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 600px;
+                max-height: 700px;
+            }
+        }
+        .nav-button {
+            transition: all 0.3s ease;
+        }
+        .nav-button:hover {
+            color: #0d9488; 
+            transform: translateY(-2px);
+        }
+        .filter-button {
+            transition: all 0.2s ease-in-out;
+        }
+        .filter-button.active {
+            background-color: #0d9488; 
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .filter-button:not(.active):hover {
+            background-color: #f0fdfa;
+            color: #134e4a;
+        }
+        .item-card {
+            transition: all 0.3s ease-in-out;
+            will-change: transform, opacity;
+        }
+        .item-card.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 antialiased">
+
+    <!-- Header & Navigation -->
+    <header class="sticky top-0 z-50 w-full bg-white/95 backdrop-blur-sm shadow-md">
+        <nav classs="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex h-20 items-center justify-between max-w-6xl mx-auto px-4">
+                <div class="flex-shrink-0">
+                    <a href="#home" class="text-2xl font-bold text-teal-700">Deniz Öztürk</a>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-4">
+                        <a href="#home" class="nav-button text-gray-600 font-medium px-3 py-2 rounded-md text-sm">Home</a>
+                        <a href="#experience" class="nav-button text-gray-600 font-medium px-3 py-2 rounded-md text-sm">Experience</a>
+                        <a href="#projects" class="nav-button text-gray-600 font-medium px-3 py-2 rounded-md text-sm">Projects</a>
+                        <a href="#skills" class="nav-button text-gray-600 font-medium px-3 py-2 rounded-md text-sm">Skills</a>
+                        <a href="#education" class="nav-button text-gray-600 font-medium px-3 py-2 rounded-md text-sm">Education & Activities</a>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-teal-600 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-teal-500">
+                        <span class="sr-only">Open main menu</span>
+                        <div id="menu-icon-open" class="block h-6 w-6">
+                            <div class="w-6 h-0.5 bg-gray-600 mb-1.5"></div>
+                            <div class="w-6 h-0.5 bg-gray-600 mb-1.5"></div>
+                            <div class="w-6 h-0.5 bg-gray-600"></div>
+                        </div>
+                        <div id="menu-icon-close" class="hidden h-6 w-6">
+                            <div class="w-6 h-0.5 bg-gray-600 rotate-45 translate-y-1"></div>
+                            <div class="w-6 h-0.5 bg-gray-600 -rotate-45 -translate-y-1"></div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <div id="mobile-menu" class="md:hidden hidden bg-white shadow-lg absolute w-full">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#home" class="nav-button-mobile block text-gray-600 font-medium px-3 py-2 rounded-md text-base">Home</a>
+                <a href="#experience" class="nav-button-mobile block text-gray-600 font-medium px-3 py-2 rounded-md text-base">Experience</a>
+                <a href="#projects" class="nav-button-mobile block text-gray-600 font-medium px-3 py-2 rounded-md text-base">Projects</a>
+                <a href="#skills" class="nav-button-mobile block text-gray-600 font-medium px-3 py-2 rounded-md text-base">Skills</a>
+                <a href="#education" class="nav-button-mobile block text-gray-600 font-medium px-3 py-2 rounded-md text-base">Education & Activities</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <!-- Home Section -->
+        <section id="home" class="py-24 md:py-32 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl text-center">
+                <h1 class="text-4xl md:text-6xl font-bold tracking-tight text-gray-900">Deniz Öztürk</h1>
+                <p class="mt-6 text-xl md:text-2xl text-teal-700 font-medium">Computer Science Student</p>
+                <p class="mt-4 max-w-3xl mx-auto text-lg text-gray-600">
+                    A dedicated and proactive Computer Science student from TUM with a strong foundation in full-stack development and a passion for robotics and autonomous systems.
+                </p>
+                <div class="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+                    <div class="bg-gray-50 rounded-xl p-8 shadow-sm border border-gray-200">
+                        <h3 class="text-2xl font-semibold text-teal-800">Fullstack Development</h3>
+                        <p class="mt-4 text-gray-600">
+                            Experienced in building and maintaining robust, scalable applications using Java, Spring Boot, Kotlin, and JavaScript, from database migration to RESTful API development.
+                        </p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-8 shadow-sm border border-gray-200">
+                        <h3 class="text-2xl font-semibold text-teal-800">Robotics & Machine Learning</h3>
+                        <p class="mt-4 text-gray-600">
+                            Hands-on experience in robotics with ROS2, developing autonomous control systems, and implementing ML models for facial recognition and custom segmentation.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Experience Section -->
+        <section id="experience" class="py-20 md:py-28">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-6 text-teal-800">Work Experience</h2>
+                <p class="text-center max-w-2xl mx-auto mb-12 text-lg text-gray-600">
+                    This section details my professional and research experience. You can filter these roles to focus on my full-stack development work or my experience in robotics and systems-level programming.
+                </p>
+                
+                <div id="experience-filters" data-filter-group="experience-list" class="flex flex-wrap justify-center gap-3 mb-12">
+                    <button data-filter="all" class="filter-button active font-medium py-2 px-5 rounded-full bg-white border border-gray-300 text-gray-700">All</button>
+                    <button data-filter="fullstack" class="filter-button font-medium py-2 px-5 rounded-full bg-white border border-gray-300 text-gray-700">Fullstack</button>
+                    <button data-filter="robotics-systems" class="filter-button font-medium py-2 px-5 rounded-full bg-white border border-gray-300 text-gray-700">Robotics & Systems</button>
+                </div>
+
+                <div id="experience-list" class="space-y-8">
+                    <!-- IABG -->
+                    <div class="item-card bg-white p-6 md:p-8 rounded-xl shadow-lg border border-gray-200" data-category="fullstack robotics-systems">
+                        <div class="flex flex-col md:flex-row justify-between md:items-center mb-3">
+                            <h3 class="text-2xl font-semibold text-gray-900">Praktikant x collab with TUM</h3>
+                            <span class="text-gray-500 font-medium mt-2 md:mt-0">April 2024 - August 2024</span>
+                        </div>
+                        <h4 class="text-xl font-medium text-teal-700">IABG (Industrieanlagen-Betriebsgesellschaft GmbH) <span class="text-gray-600 font-normal">| Munich, Germany</span></h4>
+                        <ul class="mt-4 list-disc list-inside space-y-2 text-gray-700">
+                            <li>Collaborated with a team of 6 on a drone-server-iOS app system, focusing on backend development and CI/CD integration.</li>
+                            <li>Developed a live video feed system from the drone to the mobile app to allow navigation, as well as integrating facial recognition using machine learning.</li>
+                            <li>Built a RESTful API with Java and Spring Boot to handle data exchange between the drone, our server and the app.</li>
+                            <li>Maintained 95%+ code coverage through comprehensive automated testing.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Siemens Turkey -->
+                    <div class="item-card bg-white p-6 md:p-8 rounded-xl shadow-lg border border-gray-200" data-category="fullstack">
+                        <div class="flex flex-col md:flex-row justify-between md:items-center mb-3">
+                            <h3 class="text-2xl font-semibold text-gray-900">Software Engineering Intern</h3>
+                            <span class="text-gray-500 font-medium mt-2 md:mt-0">June 2021 - September 2022</span>
+                        </div>
+                        <h4 class="text-xl font-medium text-teal-700">Siemens Turkey <span class="text-gray-600 font-normal">| Istanbul, Turkey</span></h4>
+                        <ul class="mt-4 list-disc list-inside space-y-2 text-gray-700">
+                            <li>Undertook a database migration using Kotlin, Java, and SQLite, which simplified server-client interactions and allowed fluent database access for users in our app department.</li>
+                            <li>Migrated framework tests from Java to Kotlin, enhanced code modernity and maintainability.</li>
+                            <li>Identified opportunities to refactor 1500+ lines of boiler-plate code and create more specific error logging mechanisms.</li>
+                        </ul>
+                    </div>
+
+                    <!-- WARR -->
+                    <div class="item-card bg-white p-6 md:p-8 rounded-xl shadow-lg border border-gray-200" data-category="robotics-systems">
+                        <div class="flex flex-col md:flex-row justify-between md:items-center mb-3">
+                            <h3 class="text-2xl font-semibold text-gray-900">Autonomous Control - Space Robotics</h3>
+                            <span class="text-gray-500 font-medium mt-2 md:mt-0">September 2023 - Now</span>
+                        </div>
+                        <h4 class="text-xl font-medium text-teal-700">WARR (Wissenschaftliche Arbeitsgemeinschaft für Rakete und Raumfahrt) <span class="text-gray-600 font-normal">| Munich, Germany</span></h4>
+                        <ul class="mt-4 list-disc list-inside space-y-2 text-gray-700">
+                            <li>Contributed to the development of communication protocols between a rover, with ROS2 and a control module, written in JavaScript.</li>
+                            <li>Took part in organizing community events, showcasing our rockets and drones, in collaboration with Prof. Schmucker.</li>
+                            <li>Gained experience in Robotics with ROS2, especially in low resource environments.</li>
+                        </ul>
+                    </div>
+
+                    <!-- neuroTUM -->
+                    <div class="item-card bg-white p-6 md:p-8 rounded-xl shadow-lg border border-gray-200" data-category="robotics-systems">
+                        <div class="flex flex-col md:flex-row justify-between md:items-center mb-3">
+                            <h3 class="text-2xl font-semibold text-gray-900">Founding Member</h3>
+                            <span class="text-gray-500 font-medium mt-2 md:mt-0">May 2025 - Now</span>
+                        </div>
+                        <h4 class="text-xl font-medium text-teal-700">OpenHardware - neuroTUM Research e. V <span class="text-gray-600 font-normal">| Munich, Germany</span></h4>
+                        <ul class="mt-4 list-disc list-inside space-y-2 text-gray-700">
+                            <li>Contributed to the AMD Hardware Competition (Drone-ViT-HW-Accelerator) team by developing and implementing a custom segmentation model derived from research papers.</li>
+                            <li>Took part in a Neural Network Quantization Benchmarking project, performing a systematic comparison of quantization techniques.</li>
+                            <li>Implemented Spiking Mobile ViT, a novel, mobile-optimized Vision Transformer model utilizing spiking neural networks.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Projects Section -->
+        <section id="projects" class="py-20 md:py-28 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-6 text-teal-800">Projects</h2>
+                <p class="text-center max-w-2xl mx-auto mb-12 text-lg text-gray-600">
+                    My personal projects demonstrate my initiative and ability to apply skills in new contexts. Filter by "Web & Data" to see my full-stack and data analysis projects, or "Robotics & Utilities" for other technical work.
+                </p>
+
+                <div id="project-filters" data-filter-group="project-list" class="flex flex-wrap justify-center gap-3 mb-12">
+                    <button data-filter="all" class="filter-button active font-medium py-2 px-5 rounded-full bg-white border border-gray-300 text-gray-700">All</button>
+                    <button data-filter="web-data" class="filter-button font-medium py-2 px-5 rounded-full bg-white border border-gray-300 text-gray-700">Web & Data</button>
+                    <button data-filter="robotics-utilities" class="filter-button font-medium py-2 px-5 rounded-full bg-white border border-gray-300 text-gray-700">Robotics & Utilities</button>
+                </div>
+
+                <div id="project-list" class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Ctowned.net -->
+                    <div class="item-card flex flex-col bg-gray-50 p-6 rounded-xl shadow-lg border border-gray-200" data-category="web-data">
+                        <h3 class="text-2xl font-semibold text-gray-900">Ctowned.net Stat Tracker</h3>
+                        <span class="text-gray-500 font-medium my-2">September 2022 - Now</span>
+                        <ul class="mt-2 list-disc list-inside space-y-2 text-gray-700 flex-grow">
+                            <li>Created a dashboard that aggregates, analyzes, and presents hourly data from over 20,000 users, using Pandas, Matplotlib, Seaborn, and Google Sheets API.</li>
+                            <li>Project resulted in being voted Best Community Contributor in 2020.</li>
+                            <li>Rewrote the project into Java and TypeScript.</li>
+                            <li>Formed the backbone of ctowned.net, a website with over 1000 daily active users.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Community Discord Bot -->
+                    <div class="item-card flex flex-col bg-gray-50 p-6 rounded-xl shadow-lg border border-gray-200" data-category="web-data">
+                        <h3 class="text-2xl font-semibold text-gray-900">Community Discord Bot</h3>
+                        <span class="text-gray-500 font-medium my-2">June 2020 - Now</span>
+                        <ul class="mt-2 list-disc list-inside space-y-2 text-gray-700 flex-grow">
+                            <li>Used Discord.Py, Heroku, Google Cloud API, Numpy, BeautifulSoup, and Scipy to create a Discord bot used by communities to coordinate events between users in 20+ countries.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Izmir Robotics Project -->
+                    <div class="item-card flex flex-col bg-gray-50 p-6 rounded-xl shadow-lg border border-gray-200" data-category="robotics-utilities">
+                        <h3 class="text-2xl font-semibold text-gray-900">Izmir Robotics Project</h3>
+                        <span class="text-gray-500 font-medium my-2">September 2018 - December 2018</span>
+                        <ul class="mt-2 list-disc list-inside space-y-2 text-gray-700 flex-grow">
+                            <li>Worked on a team of 4 to develop an Arduino robot to take part in a high school robotics competition.</li>
+                            <li>Incorporated Python web scraping and Pandas to retrieve and filter information relevant to communication, cached information in JSON files for faster processing.</li>
+                        </ul>
+                    </div>
+
+                    <!-- Google Cloud Cleaner -->
+                    <div class="item-card flex flex-col bg-gray-50 p-6 rounded-xl shadow-lg border border-gray-200" data-category="robotics-utilities">
+                        <h3 class="text-2xl font-semibold text-gray-900">Google Cloud Cleaner</h3>
+                        <span class="text-gray-500 font-medium my-2">June 2017 - May 2018</span>
+                        <ul class="mt-2 list-disc list-inside space-y-2 text-gray-700 flex-grow">
+                            <li>Developed a web application with JavaScript, HTML, and Drive API that finds old files and reduces GSuite storage use.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Skills Section -->
+        <section id="skills" class="py-20 md:py-28">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-6 text-teal-800">Technical Skills</h2>
+                <p class="text-center max-w-2xl mx-auto mb-12 text-lg text-gray-600">
+                    This visualization provides an overview of my proficiency across key technologies, based on my project and work experience. Hover over any bar to see the specific skill.
+                </p>
+                <div class="chart-container bg-white p-4 rounded-xl shadow-lg border border-gray-200">
+                    <canvas id="skillsChart"></canvas>
+                </div>
+                <div class="mt-12 p-6 bg-white rounded-xl shadow-lg border border-gray-200">
+                    <h3 class="text-2xl font-semibold text-gray-900 mb-4">Skills Summary</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                        <div>
+                            <h4 class="text-lg font-semibold text-teal-700 mb-2">Programming Languages & Technologies</h4>
+                            <p class="text-gray-700">Java, Kotlin, JavaScript, Python, C, ROS2, Pandas, Node.js, Heroku, Spring Boot</p>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-teal-700 mb-2">Software & Tools</h4>
+                            <p class="text-gray-700">MySQL, STATA, AWS, Google Cloud, NoSQL, Git, Excel, Microsoft Office, Photoshop, CI/CD, SQLite</p>
+                        </div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-teal-700 mb-2">Languages</h4>
+                            <p class="text-gray-700">Turkish (fluent), German (fluent), English (fluent)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Education & Activities Section -->
+        <section id="education" class="py-20 md:py-28 bg-white">
+            <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl">
+                <h2 class="text-3xl md:text-4xl font-bold text-center mb-6 text-teal-800">Education & Activities</h2>
+                 <p class="text-center max-w-2xl mx-auto mb-12 text-lg text-gray-600">
+                    My formal education is complemented by practical, hands-on activities where I take on leadership and technical roles within my university community.
+                </p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Education Column -->
+                    <div class="space-y-8">
+                        <h3 class="text-2xl font-semibold text-gray-900 border-b-2 border-teal-600 pb-2">Education</h3>
+                        <div class="bg-gray-50 p-6 rounded-xl shadow-md border border-gray-200">
+                            <h4 class="text-xl font-semibold text-teal-700">Technical University of Munich</h4>
+                            <p class="text-gray-600 font-medium mt-1">B.Sc in Computer Science</p>
+                            <p class="text-gray-500 mt-1">Munich, Germany | October 2021 - Now</p>
+                        </div>
+                        <div class="bg-gray-50 p-6 rounded-xl shadow-md border border-gray-200">
+                            <h4 class="text-xl font-semibold text-teal-700">Deutsche Schule Istanbul</h4>
+                            <p class="text-gray-500 mt-1">Istanbul, Turkey | May 2021</p>
+                        </div>
+                    </div>
+
+                    <!-- Activities Column -->
+                    <div class="space-y-8">
+                        <h3 class="text-2xl font-semibold text-gray-900 border-b-2 border-teal-600 pb-2">Activities & Leadership</h3>
+                        <div class="bg-gray-50 p-6 rounded-xl shadow-md border border-gray-200">
+                            <h4 class="text-xl font-semibold text-teal-700">Olynet Networking e. V</h4>
+                            <p class="text-gray-600 font-medium mt-1">Network Administrator</p>
+                            <p class="text-gray-500 mt-1">Munich, Germany | September 2023 - Now</p>
+                            <ul class="mt-3 list-disc list-inside space-y-1 text-gray-700">
+                                <li>Managed 17 students for maintaining reliable networking in the Olympia Dorf dormitory.</li>
+                                <li>Investigated internet issues, suggested improvements, and coordinated with the IT department.</li>
+                                <li>Built internal database systems with MongoDB (NoSQL) for service management.</li>
+                            </ul>
+                        </div>
+                        <div class="bg-gray-50 p-6 rounded-xl shadow-md border border-gray-200">
+                            <h4 class="text-xl font-semibold text-teal-700">Technical University of Munich</h4>
+                            <p class="text-gray-600 font-medium mt-1">Teaching Assistant</p>
+                            <p class="text-gray-500 mt-1">Munich, Germany | September 2023 - Now</p>
+                            <ul class="mt-3 list-disc list-inside space-y-1 text-gray-700">
+                                <li>Contributed to organizing and teaching systemC as part of a Practical Course in CPU Architecture.</li>
+                                <li>Supervised teams of students developing projects in systemC, simulating small scale single threaded CPUs.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-gray-800 text-gray-300 py-12">
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8 max-w-6xl text-center">
+            <h3 class="text-2xl font-semibold text-white">Get in Touch</h3>
+            <p class="mt-4 max-w-lg mx-auto">
+                I'm always open to discussing new opportunities and challenges.
+            </p>
+            <div class="mt-8 flex justify-center space-x-6">
+                <a href="mailto:placeholder@email.com" class="text-gray-300 hover:text-teal-400 transition">
+                    <span class="sr-only">Email</span>
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8l8 5 8-5v10zm-8-7L4 6h16l-8 5z"/></svg>
+                </a>
+                <a href="#" class="text-gray-300 hover:text-teal-400 transition">
+                    <span class="sr-only">LinkedIn</span>
+                    <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14zm-11 6H5v10h3V9zm-1.5-2A1.5 1.5 0 0 0 5 8.5a1.5 1.5 0 0 0 1.5-1.5A1.5 1.5 0 0 0 6.5 5.5A1.5 1.5 0 0 0 5 7zm11 2h-2.8c.1 1.2.3 2.4.3 2.4v7.6h-3V13.8c0-2-1.2-2.9-2.9-2.9C8.3 11 7 12 7 13.8v5.2h-3V9h3v1.3c.7-1.1 1.9-1.8 3.5-1.8 2.6 0 4.5 1.7 4.5 5.2v6.3h3V13.7c0-1.5-.8-2.7-2.1-2.7s-1.9 1.2-1.9 2.7v.3h.1c.1 0 .1 0 .1 0z"/></svg>
+                </a>
+            </div>
+            <p class="mt-8 text-sm text-gray-400">&copy; 2025 Deniz Öztürk. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            
+            function initNavigation() {
+                const navLinks = document.querySelectorAll('header nav a[href^="#"], #mobile-menu a[href^="#"]');
+                navLinks.forEach(link => {
+                    link.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        const targetId = this.getAttribute('href');
+                        const targetElement = document.querySelector(targetId);
+                        if (targetElement) {
+                            targetElement.scrollIntoView({
+                                behavior: 'smooth',
+                                block: 'start'
+                            });
+                            
+                            if (window.innerWidth < 768) {
+                                mobileMenu.classList.add('hidden');
+                                menuIconOpen.classList.remove('hidden');
+                                menuIconClose.classList.add('hidden');
+                            }
+                        }
+                    });
+                });
+                
+                const mobileMenuButton = document.getElementById('mobile-menu-button');
+                const mobileMenu = document.getElementById('mobile-menu');
+                const menuIconOpen = document.getElementById('menu-icon-open');
+                const menuIconClose = document.getElementById('menu-icon-close');
+
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                    menuIconOpen.classList.toggle('hidden');
+                    menuIconClose.classList.toggle('hidden');
+                });
+            }
+
+            function initFiltering() {
+                const filterGroups = document.querySelectorAll('[data-filter-group]');
+                
+                filterGroups.forEach(group => {
+                    const buttons = group.querySelectorAll('.filter-button');
+                    const targetListId = group.getAttribute('data-filter-group');
+                    const itemList = document.getElementById(targetListId);
+                    if (!itemList) return;
+                    
+                    const items = itemList.querySelectorAll('.item-card[data-category]');
+                    
+                    buttons.forEach(button => {
+                        button.addEventListener('click', () => {
+                            const filter = button.getAttribute('data-filter');
+                            
+                            buttons.forEach(btn => btn.classList.remove('active'));
+                            button.classList.add('active');
+                            
+                            items.forEach(item => {
+                                const categories = item.getAttribute('data-category').split(' ');
+                                if (filter === 'all' || categories.includes(filter)) {
+                                    item.classList.remove('hidden');
+                                } else {
+                                    item.classList.add('hidden');
+                                }
+                            });
+                        });
+                    });
+                });
+            }
+
+            function initSkillsChart() {
+                const ctx = document.getElementById('skillsChart');
+                if (!ctx) return;
+                
+                const chartData = {
+                    labels: [
+                        'Java', 'Spring Boot', 'Kotlin', 'Databases (SQL/NoSQL)', 'Python',
+                        'JavaScript', 'ROS2', 'Machine Learning', 'C', 'DevOps (Git, CI/CD, AWS)'
+                    ],
+                    datasets: [{
+                        label: 'Proficiency',
+                        data: [
+                            5, 5, 5, 4, 4, 
+                            4, 4, 3.5, 3, 3
+                        ],
+                        backgroundColor: '#0d9488',
+                        borderColor: '#0f766e',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                };
+
+                const chartOptions = {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            max: 5,
+                            grid: {
+                                color: '#e5e7eb'
+                            },
+                            ticks: {
+                                color: '#4b5563',
+                                font: {
+                                    family: "'Inter', sans-serif"
+                                }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#111827',
+                                font: {
+                                    family: "'Inter', sans-serif",
+                                    weight: '500',
+                                    size: 14
+                                },
+                                callback: function(value, index, values) {
+                                    const label = this.getLabelForValue(value);
+                                    if (label.length > 16) {
+                                        return label.substring(0, 16) + '...';
+                                    }
+                                    return label;
+                                }
+                            }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            enabled: true,
+                            backgroundColor: '#111827',
+                            titleFont: {
+                                family: "'Inter', sans-serif",
+                                weight: 'bold'
+                            },
+                            bodyFont: {
+                                family: "'Inter', sans-serif"
+                            },
+                            callbacks: {
+                                label: function(context) {
+                                    return ` Proficiency: ${context.raw}/5`;
+                                }
+                            }
+                        }
+                    }
+                };
+
+                new Chart(ctx.getContext('2d'), {
+                    type: 'bar',
+                    data: chartData,
+                    options: chartOptions
+                });
+            }
+
+            initNavigation();
+            initFiltering();
+            initSkillsChart();
+        });
+    </script>
+</body>
+</html>
